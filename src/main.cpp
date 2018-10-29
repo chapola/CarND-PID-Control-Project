@@ -32,10 +32,28 @@ int main()
 {
   uWS::Hub h;
 
-  PID pid;
   // TODO: Initialize the pid variable.
+    PID pid_steer;
+    PID pid_throttle;
+    
+    // TODO: Initialize the pid variable.
+    double Kp = .25;
+    double Ki = 0.001;
+    double Kd = 12;
+    
+    // Steerin control initialization
+    pid_steer.Init( Kp, Ki, Kd);
+    
+    // Throttle cruise control
+    Kp = .25;
+    Ki = .005;
+    Kd = 1;
+    
+    // Throttle control initialization
+    pid_throttle.Init( Kp, Ki, Kd);
+    
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid_steer, &pid_throttle](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -46,27 +64,35 @@ int main()
         auto j = json::parse(s);
         std::string event = j[0].get<std::string>();
         if (event == "telemetry") {
-          // j[1] is the data JSON object
-          double cte = std::stod(j[1]["cte"].get<std::string>());
-          double speed = std::stod(j[1]["speed"].get<std::string>());
-          double angle = std::stod(j[1]["steering_angle"].get<std::string>());
-          double steer_value;
-          /*
-          * TODO: Calcuate steering value here, remember the steering value is
-          * [-1, 1].
-          * NOTE: Feel free to play around with the throttle and speed. Maybe use
-          * another PID controller to control the speed!
-          */
-          
-          // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
-
-          json msgJson;
-          msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
-          auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
-          ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+            // j[1] is the data JSON object
+            double cte = std::stod(j[1]["cte"].get<std::string>());
+            double speed = std::stod(j[1]["speed"].get<std::string>());
+            double angle = std::stod(j[1]["steering_angle"].get<std::string>());
+            double steer_value;
+            double throttle_value; // throttle variable
+            const double cruise_speed = 60; // Target speed for cruise control
+            
+            // Calculate P,I,D errors for steering and throttle
+            pid_throttle.UpdateError(cruise_speed-speed);
+            pid_steer.UpdateError(cte);
+            
+            // Calculate the steering and throttle value by summing the control values for PID
+            throttle_value = pid_throttle.TotalError();
+            steer_value = -pid_steer.TotalError();
+            
+            //  Normalize the steer_value to [-1,1]
+            steer_value = pid_steer.Normalize(steer_value);
+            
+            // DEBUG
+            std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+            std::cout << "Speed: " << speed << " Throttle Value: " << throttle_value << std::endl;
+            
+            json msgJson;
+            msgJson["steering_angle"] = steer_value;
+            msgJson["throttle"] = throttle_value;
+            auto msg = "42[\"steer\"," + msgJson.dump() + "]";
+            std::cout << msg << std::endl;
+            ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
         // Manual driving

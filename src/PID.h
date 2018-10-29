@@ -9,6 +9,7 @@ public:
   double p_error;
   double i_error;
   double d_error;
+  double err;
 
   /*
   * Coefficients
@@ -17,6 +18,14 @@ public:
   double Ki;
   double Kd;
 
+    /*
+     *Error counter
+     */
+    long counter;
+    double error_sum;
+    double min_error;
+    double max_error;
+    
   /*
   * Constructor
   */
@@ -41,6 +50,9 @@ public:
   * Calculate the total PID error.
   */
   double TotalError();
+// Normalize the steer value to [-1, 1]
+double Normalize(double steer_value);
 };
+
 
 #endif /* PID_H */
