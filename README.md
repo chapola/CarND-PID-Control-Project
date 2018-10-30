@@ -1,9 +1,18 @@
 # CarND-Controls-PID
 Self-Driving Car Engineer Nanodegree Program
 
+### I implemented a PID controller for the steering of a simulated car given cross-track error information from the simulator. I also setup a cruise control PID for controlling the speed to a given set point. 
 ---
+### The main focus of the project was tuning the gains Kp, Ki, and Kd for the proportional, integral, and derivative control inputs respectively.
+I began my search for the proper gains at unity for all, Kp = Ki = Kd = 1.This led to unsurprisingly poor results. The steering is erratic and the car is slow since it is always turning left to right rapidly. I suspected that this was due to integral gain being too high.
 
-## Dependencies
+### I then tried to remove integral control to see its affect (see video below). It resulted in much better performance but still unstable in the long term, now probably due to high proportional gain.
+
+### Then I dropped the proportional gain (Kp = 0.1) to reduce instability . This made the controller marginally stable and had a limit cycle oscillation which I wanted to eliminate. 
+
+
+###  I could see the affect of each gain, and after spending some time I reached my final result of Kp = .25, Ki = .001, Kd = 12 for steering control. I also implemented a cruise control using the following gain values tuned starting from my steering gains. The throttle gains final result were Kp = .25, Ki = .005, Kd = 1. I learned that proportional gains being too high would lead to unstable oscillations.
+
 
 * cmake >= 3.5
  * All OSes: [click here for installation instructions](https://cmake.org/install/)
